@@ -1,2 +1,2 @@
-# make_cutout
-Make cutouts of fits file
+# Cutout maker
+Make cutouts with arbitrary size of all the FITS files under certain directory.
