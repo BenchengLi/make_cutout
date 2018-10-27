@@ -41,10 +41,6 @@ def cutout(target,radius):
                 data_min=np.percentile(flat_data,100-int(scale))
                 data_max=np.percentile(flat_data,int(scale))
                 if data_min < 0:
-                    #for b in data:
-                        #for i,c in enumerate(b):
-                            #if np.isnan(c)==True:
-                                #b[i]=data_min
                     data=data-data_min
                     data1=np.maximum(data,0)
                     data2=np.minimum(data1,data_max)
