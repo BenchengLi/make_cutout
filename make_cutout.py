@@ -41,6 +41,10 @@ def cutout(target,radius):
                 data_min=np.percentile(flat_data,100-int(scale))
                 data_max=np.percentile(flat_data,int(scale))
                 if data_min < 0:
+                    #for b in data:
+                        #for i,c in enumerate(b):
+                            #if np.isnan(c)==True:
+                                #b[i]=data_min
                     data=data-data_min
                     data1=np.maximum(data,0)
                     data2=np.minimum(data1,data_max)
@@ -56,20 +60,21 @@ def cutout(target,radius):
                 fits_name='cutout_'+str(x)+'_'+str(y)+'.png'
                 imsave(fits_name,im)
                 cutout_list.append(fits_name)
-                x=x+int(radius)
+                x=x+16
             except:
-                x=x+int(radius)
+                x=x+16
         else:
             x=0
-            y=y+int(radius)
+            y=y+16
         if y>num:
             break
 
+df_list=[]
 file_list=[]
 sfile_list=[]
 dir_list=[]
 path_dict=dict()
-
+path_dict1=dict()
 for (dirpath, dirnames, filenames) in walk(mypath):
     dir_list.append(dirpath)
 for mysondir in dir_list:
@@ -87,10 +92,11 @@ for mysondir in dir_list:
             path=sdir+'/'+each_fits
             cutout(path,ra)
             shutil.move(sdir+'/'+each_fits,sdir+'/'+each_dir+'/'+each_fits)
-            print(cutout_list)
             for cutouts in cutout_list:
                 cutouts1=each_dir+'_'+cutouts
-                shutil.move(cutouts,sdir+'/'+each_dir+'/'+cutouts1)
+                fits_dir=sdir+'/'+each_dir+'/'
+                shutil.move(cutouts,fits_dir+cutouts1)
+                path_dict1[cutouts1]=fits_dir
             file_list.append(each_dir)
             cutout_list.clear()
     path_dict.clear()
