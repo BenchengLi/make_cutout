@@ -60,21 +60,24 @@ def cutout(target,radius):
                 fits_name='cutout_'+str(x)+'_'+str(y)+'.png'
                 imsave(fits_name,im)
                 cutout_list.append(fits_name)
-                x=x+16
+                x=x+500
             except:
-                x=x+16
+                x=x+500
         else:
             x=0
-            y=y+16
+            y=y+500
         if y>num:
             break
 
 df_list=[]
+name_list=[]
 file_list=[]
 sfile_list=[]
 dir_list=[]
 path_dict=dict()
 path_dict1=dict()
+count=1
+
 for (dirpath, dirnames, filenames) in walk(mypath):
     dir_list.append(dirpath)
 for mysondir in dir_list:
@@ -84,8 +87,11 @@ for mysondir in dir_list:
     for sfile in sfile_list[0]:
         if '.fits' in sfile:
             path_dict[sfile]=sdir
+            name_list.append(sfile)
+    num_fits=len(name_list)
     for each_fits in path_dict:
         each_dir=each_fits[:-5]
+        print ('Working on '+each_fits+' '+str(count)+'/'+str(num_fits))
         if each_dir not in file_list:
             if not os.path.exists(sdir+'/'+each_dir):
                 os.mkdir(sdir+'/'+each_dir)
@@ -99,5 +105,7 @@ for mysondir in dir_list:
                 path_dict1[cutouts1]=fits_dir
             file_list.append(each_dir)
             cutout_list.clear()
+            print (each_fits+' done! '+str(count)+'/'+str(num_fits))
+            count=count+1
     path_dict.clear()
     sfile_list.clear()
