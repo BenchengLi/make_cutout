@@ -23,7 +23,7 @@ ra=input('Radius of cutout image: ')
 scale=input('The scale(integer) of cutout: ')
 
 def cutout(target,radius):
-    file=fits.open(target)
+    file=fits.open(target,ignore_missing_end=True)
     file_data=file[0].data
     file_wcs=WCS(file[0].header)
     ra,dec=file_wcs.all_pix2world([0],[0],1)
