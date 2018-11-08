@@ -6,7 +6,6 @@ mypath=input('My path: ')
 df_list=[]
 file_list=[]
 sfile_list=[]
-dir_list=[]
 path_dict=dict()
 path_dict1=dict()
 cutout_list=[]
