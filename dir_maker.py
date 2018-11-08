@@ -12,9 +12,7 @@ path_dict1=dict()
 cutout_list=[]
 
 for (dirpath, dirnames, filenames) in walk(mypath):
-    dir_list.append(dirpath)
-for mysondir in dir_list:
-    sdir=mysondir
+    sdir=dirpath
     for (sdirpath, sdirnames, sfilenames) in walk(sdir):
         sfile_list.append(sfilenames)
     for sfile in sfile_list[0]:
