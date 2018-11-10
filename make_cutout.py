@@ -14,8 +14,9 @@ from IPython.core.interactiveshell import InteractiveShell
 InteractiveShell.ast_node_interactivity = "all"
 from IPython import display
 import os
-from os import walk
+from os import walk, path
 import shutil
+import pickle
 
 cutout_list=[]
 mypath=input('My path: ')
@@ -115,3 +116,14 @@ for mysondir in dir_list:
             count=count+1
     path_dict.clear()
     sfile_list.clear()
+if os.path.exists('directory_map.pkl')==True:
+    with open('directory_map.pkl','rb') as f:
+        path_dict1.update(pickle.load(f))
+        
+for key,val in path_dict1.items():
+    cube=[key,val]
+    df_list.append(cube)
+
+df_dir=pd.DataFrame(data=df_list,columns=['fits name', 'parent directory'])
+df_dir.to_pickle("./directory_map.pkl")
+print (df_dir)
