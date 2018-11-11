@@ -22,12 +22,23 @@ cutout_list=[]
 mypath=input('My path: ')
 ra=input('Radius of cutout image: ')
 scale=input('The scale(integer) of cutout: ')
+i=0
+df1_list=[]
+df2_list=[]
+df_list=[]
+name_list=[]
+name_list1=[]
+file_list=[]
+sfile_list=[]
+dir_list=[]
+path_dict=dict()
+count=1
 
 def cutout(target,radius):
+    global i
     file=fits.open(target,ignore_missing_end=True)
     file_data=file[0].data
     file_wcs=WCS(file[0].header)
-    ra,dec=file_wcs.all_pix2world([0],[0],1)
     file_wcs.sip=None
     num=int(len(file_data))
     x=0
@@ -42,10 +53,6 @@ def cutout(target,radius):
                 data_min=np.percentile(flat_data,100-int(scale))
                 data_max=np.percentile(flat_data,int(scale))
                 if data_min < 0:
-                    #for b in data:
-                        #for i,c in enumerate(b):
-                            #if np.isnan(c)==True:
-                                #b[i]=data_min
                     data=data-data_min
                     data1=np.maximum(data,0)
                     data2=np.minimum(data1,data_max)
@@ -54,42 +61,38 @@ def cutout(target,radius):
                     data1=np.maximum(data,data_min)
                     data2=np.minimum(data1,data_max)
                     data3=data2/data_max*255
-                #print (data3)
                 im=Image.fromarray(data3)
                 if im.mode != 'RGB':
                     im=im.convert('RGB')
-                fits_name='cutout_'+str(x)+'_'+str(y)+'.png'
-                imsave(fits_name,im)
-                cutout_list.append(fits_name)
-                x=x+16
+                png_name='{:010d}.png'.format(i)
+                index='{:010d}'.format(i)
+                imsave(png_name,im)
+                parent_fits=target
+                df1_list.append(parent_fits)
+                ra, dec=file_wcs.all_pix2world(x,y,0)
+                cube1=[ra,dec,x,y,index]
+                df2_list.append(cube1)
+                cutout_list.append(png_name)
+                shutil.move(png_name,'cutout')
+                x=x+500
+                i=i+1
             except:
-                x=x+16
+                x=x+500
+                i=i+1
         else:
             x=0
-            y=y+16
+            y=y+500
         if y>num:
             break
 
-df_list=[]
-name_list=[]
-name_list1=[]
-file_list=[]
-sfile_list=[]
-dir_list=[]
-path_dict=dict()
-path_dict1=dict()
-count=1
-
 for (dirpath, dirnames, filenames) in walk(mypath):
-    dir_list.append(dirpath)
-for mysondir in dir_list:
-    sdir=mysondir
-    for (sdirpath, sdirnames, sfilenames) in walk(sdir):
-        sfile_list.append(sfilenames)
-    for sfile in sfile_list[0]:
+    for (sdirpath, sdirnames, sfilenames) in walk(dirpath):
+        sfile_list=sfilenames
+        break
+    for sfile in sfile_list:
         if '.fits' in sfile:
             name_list.append(sfile)
-            path_dict[sfile]=sdir
+            path_dict[sfile]=dirpath
             vfile=sfile[:-5]
             for x in dir_list:
                 if vfile in x:
@@ -100,30 +103,19 @@ for mysondir in dir_list:
         each_dir=each_fits[:-5]
         print ('Working on '+each_fits+' '+str(count)+'/'+str(num_fits))
         if each_dir not in file_list:
-            if not os.path.exists(sdir+'/'+each_dir):
-                os.mkdir(sdir+'/'+each_dir)
-            path=sdir+'/'+each_fits
+            path=dirpath+'/'+each_fits
             cutout(path,ra)
-            shutil.move(sdir+'/'+each_fits,sdir+'/'+each_dir+'/'+each_fits)
-            for cutouts in cutout_list:
-                cutouts1=each_dir+'_'+cutouts
-                fits_dir=sdir+'/'+each_dir+'/'
-                shutil.move(cutouts,fits_dir+cutouts1)
-                path_dict1[cutouts1]=fits_dir
             file_list.append(each_dir)
             cutout_list.clear()
             print (each_fits+' done! '+str(count)+'/'+str(num_fits))
             count=count+1
     path_dict.clear()
     sfile_list.clear()
-if os.path.exists('directory_map.pkl')==True:
-    with open('directory_map.pkl','rb') as f:
-        path_dict1.update(pickle.load(f))
-        
-for key,val in path_dict1.items():
-    cube=[key,val]
-    df_list.append(cube)
 
-df_dir=pd.DataFrame(data=df_list,columns=['fits name', 'parent directory'])
-df_dir.to_pickle("./directory_map.pkl")
-print (df_dir)
+df1=pd.DataFrame(data=df1_list,columns=['parent directory'])
+df1.to_pickle("./directory_map.pkl")
+print (df1)
+
+df2=pd.DataFrame(data=df2_list,columns=['RA','Dec','x_pix','y_pix','dir_id'])
+df2.to_pickle("./big_map.pkl")
+print (df2)
