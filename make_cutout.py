@@ -65,7 +65,7 @@ def cutout(target,radius):
                 if im.mode != 'RGB':
                     im=im.convert('RGB')
                 png_name='{:010d}.png'.format(i)
-                index='{:010d}'.format(i)
+                index='{:011d}'.format(i)
                 imsave(png_name,im)
                 parent_fits=target
                 df1_list.append(parent_fits)
