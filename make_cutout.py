@@ -81,7 +81,6 @@ def cutout(target,radius):
         else:
             x=0
             y=y+16
-            i=i+1
         if y>num:
             break
 
