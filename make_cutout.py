@@ -74,14 +74,14 @@ def cutout(target,radius):
                 df2_list.append(cube1)
                 cutout_list.append(png_name)
                 shutil.move(png_name,'cutout')
-                x=x+500
+                x=x+16
                 i=i+1
             except:
-                x=x+500
-                i=i+1
+                x=x+16
         else:
             x=0
-            y=y+500
+            y=y+16
+            i=i+1
         if y>num:
             break
 
