@@ -43,6 +43,12 @@ def cutout(target,radius):
     num=int(len(file_data))
     x=0
     y=0
+    index=df1_list.index(target)
+    index_format='{:010d}'.format(index)
+    try:
+        os.mkdir('cutout/'+str(index_format))
+    except:
+        print('Folder '+str(index_format)+' already exists!')
     while True:
         if x <= num:
             try:
@@ -64,23 +70,20 @@ def cutout(target,radius):
                 im=Image.fromarray(data3)
                 if im.mode != 'RGB':
                     im=im.convert('RGB')
-                png_name='{:010d}.png'.format(i)
-                index='{:011d}'.format(i)
+                png_name='{:010d}.jpeg'.format(i)
                 imsave(png_name,im)
-                parent_fits=target
-                df1_list.append(parent_fits)
                 ra, dec=file_wcs.all_pix2world(x,y,0)
-                cube1=[ra,dec,x,y,index]
+                cube1=[i,ra,dec,x,y,index]
                 df2_list.append(cube1)
                 cutout_list.append(png_name)
-                shutil.move(png_name,'cutout')
-                x=x+16
+                shutil.move(png_name,'cutout/'+str(index_format))
+                x=x+500
                 i=i+1
             except:
-                x=x+16
+                x=x+500
         else:
             x=0
-            y=y+16
+            y=y+500
         if y>num:
             break
 
@@ -103,18 +106,22 @@ for (dirpath, dirnames, filenames) in walk(mypath):
         print ('Working on '+each_fits+' '+str(count)+'/'+str(num_fits))
         if each_dir not in file_list:
             path=dirpath+'/'+each_fits
+            if path not in df1_list:
+                df1_list.append(path)
             cutout(path,ra)
+            index=df1_list.index(path)
+            index_format='{:010d}'.format(index)
+            df2=pd.DataFrame(data=df2_list,columns=['file_id','RA','Dec','x_pix','y_pix','dir_id'])
+            df2.to_pickle('./cutout/'+str(index_format)+'/big_map.pkl')
+            print(df2)
             file_list.append(each_dir)
             cutout_list.clear()
             print (each_fits+' done! '+str(count)+'/'+str(num_fits))
             count=count+1
+            df2_list.clear()
     path_dict.clear()
     sfile_list.clear()
 
 df1=pd.DataFrame(data=df1_list,columns=['parent directory'])
-df1.to_pickle("./directory_map.pkl")
+df1.to_pickle("./cutout/directory_map.pkl")
 print (df1)
-
-df2=pd.DataFrame(data=df2_list,columns=['RA','Dec','x_pix','y_pix','dir_id'])
-df2.to_pickle("./big_map.pkl")
-print (df2)
