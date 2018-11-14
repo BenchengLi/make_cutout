@@ -70,8 +70,8 @@ def cutout(target,radius):
                 im=Image.fromarray(data3)
                 if im.mode != 'RGB':
                     im=im.convert('RGB')
-                png_name='{:010d}.jpeg'.format(i)
-                imsave(png_name,im)
+                image_name='{:010d}.jpeg'.format(i)
+                imsave(image_name,im)
                 ra, dec=file_wcs.all_pix2world(x,y,0)
                 cube1=[i,ra,dec,x,y,index]
                 df2_list.append(cube1)
