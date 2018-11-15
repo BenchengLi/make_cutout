@@ -75,17 +75,17 @@ def cutout(target,radius):
                 image_name='{:010d}.jpeg'.format(i)
                 imsave(image_name,im)
                 ra, dec=file_wcs.all_pix2world(x,y,0)
-                cube2=[int(i),float(ra),float(dec),int(x),int(y),int(index)]
+                cube2=[np.int32(i),np.float32(ra),np.float32(dec),np.int32(x),np.int32(y),np.int32(index)]
                 df2_list.append(cube2)
                 cutout_list.append(image_name)
                 shutil.move(image_name,'cutout/'+str(index_format))
-                x=x+500
+                x=x+16
                 i=i+1
             except:
-                x=x+500
+                x=x+16
         else:
             x=0
-            y=y+500
+            y=y+16
         if y>num:
             break
 
@@ -109,7 +109,7 @@ for (dirpath, dirnames, filenames) in walk(mypath):
         if each_dir not in file_list:
             path=dirpath+'/'+each_fits
             if path not in fits_list:
-                cube1=[path,int(n)]
+                cube1=[path,np.int32(n)]
                 df1_list.append(cube1)
                 fits_list.append(path)
             cutout(path,ra)
