@@ -18,6 +18,7 @@ import gc
 mypath=input('My path: ')
 ra=input('Radius of cutout image: ')
 scale=input('The scale(integer) of cutout: ')
+strid=input('The stride: ')
 start_time=time.time()
 i=0
 m=0
@@ -64,13 +65,14 @@ def cutout(target,radius):
                 data_max=np.percentile(flat_data,int(scale))
                 if data_min < 0:
                     data=data-data_min
-                    data1=np.maximum(data,0)
-                    data2=np.minimum(data1,data_max)
-                    data3=data2/(data_max)*255
-                else:
-                    data1=np.maximum(data,data_min)
-                    data2=np.minimum(data1,data_max)
-                    data3=data2/data_max*255
+                data1=np.maximum(data,0)
+                data2=np.minimum(data1,data_max)
+                data_std=np.std(data2)
+                if data_std<1:
+                    data_thre=np.percentile(data2,60)
+                    data2=(data2-data_thre)*1/data_std+data_thre
+                    data_max=np.percentile(data2,int(scale))
+                data3=data2/data_max*255
                 flat_data3=data3.ravel()
                 data3_max=np.percentile(flat_data3,90)
                 if np.isnan(data3_max)==False:
@@ -84,12 +86,12 @@ def cutout(target,radius):
                     df2_list.append(cube2)
                     shutil.move(image_name,'cutout/'+str(index_format))
                     i=i+1
-                x=x+30
+                x=x+int(strid)
             except:
-                x=x+30
+                x=x+int(strid)
         else:
             x=0
-            y=y+30
+            y=y+int(strid)
         if y>num:
             break
 
@@ -127,3 +129,4 @@ df1=pd.DataFrame(data=df1_list,columns=['parent directory','dir_id'])
 df1.to_pickle("./cutout/directory_map.pkl")
 print (df1)
 print("--- %s seconds ---" % (time.time() - start_time))
+
