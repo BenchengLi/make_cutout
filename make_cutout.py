@@ -46,13 +46,13 @@ def get_boundary(num1,num2):
 def normal_data(data):
     global data3,data_max,nan_count,data3_max
     flat_data=np.ravel(data)
-    flat_data = flat_data[np.logical_not(np.isnan(flat_data))]
-    data_max=np.percentile(flat_data,int(scale))
-    data1=np.maximum(data,0)
-    data2=np.minimum(data1, data_max)
-    data3=data2/data_max*255
-    flat_data3=np.ravel(data3)
-    data3_max=np.percentile(flat_data3,30)
+    if np.any(np.isnan(flat_data)==False)==True:
+        data_max=np.percentile(flat_data,int(scale))
+        data1=np.maximum(data,0)
+        data2=np.minimum(data1, data_max)
+        data3=data2/data_max*255
+        flat_data3=np.ravel(data3)
+        data3_max=np.percentile(flat_data3,30)
 
 #save data array into jpeg images
 def save(data):
@@ -104,16 +104,12 @@ for (dirpath, dirnames, filenames) in walk(mypath):
         cube1=[path,np.int32(n)]
         df1_list.append(cube1)
         cutout(path,ra)
-        if x==-1:
-            print(str(path)+' not working')
-            df1_list.remove(cube1)
-        else:
-            index_format='{:010d}'.format(n)
-            df2=pd.DataFrame(data=df2_list,columns=['file_id','RA','Dec','x_pix','y_pix','q_max','dir_id'])
-            df2.to_pickle('./cutout/'+str(index_format)+'/big_map.pkl')
-            print(df2)
-            print (each_fits+' done! '+str(m+1)+'/'+str(num_fits))
-            n=n+1
+        index_format='{:010d}'.format(n)
+        df2=pd.DataFrame(data=df2_list,columns=['file_id','RA','Dec','x_pix','y_pix','q_max','dir_id'])
+        df2.to_pickle('./cutout/'+str(index_format)+'/big_map.pkl')
+        print(df2)
+        print (each_fits+' done! '+str(m+1)+'/'+str(num_fits))
+        n=n+1
         m=m+1
         df2_list.clear()
         gc.collect()
