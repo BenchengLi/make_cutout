@@ -20,17 +20,17 @@ from make_cutout_para import prep
 start_time=time.time()
 i,s,m,n,mypath,ra,scale,df1_list,df2_list,name_list,file_list,sfile_list,path_dict = prep()
 
-#Open a FITS file, read its data and create its corresponding folder
+#Open a FITS file, read its data, create its corresponding folder and get the size of x and y pix
 def open_fits(target):
-    global file_data, file_wcs, num_x, num_y
+    global file_data, file_wcs, x_size, y_size
     file=fits.open(target,ignore_missing_end=True)
     file_data=file[0].data
     file_wcs=WCS(file[0].header)
     file_wcs.sip=None
-    num_x=int(np.ma.size(file_data,1))
-    num_y=int(np.ma.size(file_data,0))
+    x_size=int(np.ma.size(file_data,1))
+    y_size=int(np.ma.size(file_data,0))
 
-#Get the x,y boundary for a FITS file
+# generate a list for all x and y values
 def get_boundary(num1,num2):
     global x_list, y_list
     x_list=[]
@@ -46,15 +46,15 @@ def get_boundary(num1,num2):
 def normal_data(data):
     global data3,data_max,nan_count,data3_max
     flat_data=np.ravel(data)
-    if np.any(np.isnan(flat_data)==False)==True:
-        data_max=np.percentile(flat_data,int(scale))
-        data1=np.maximum(data,0)
-        data2=np.minimum(data1, data_max)
-        data3=data2/data_max*255
-        flat_data3=np.ravel(data3)
-        data3_max=np.percentile(flat_data3,30)
+    data_max=np.percentile(flat_data,int(scale))
+    data1=np.maximum(data,0)
+    data2=np.minimum(data1, data_max)
+    data3=data2/data_max*255
+    flat_data3=np.ravel(data3)
+    # Check if more than 30% of pix value is NaN (Directly count NaN in ndarray is not easy...)
+    data3_max=np.percentile(flat_data3,30)
 
-#save data array into jpeg images
+#save data array into jpeg images and build up our big_map
 def save(data):
     im=Image.fromarray(data)
     if im.mode != 'RGB':
@@ -70,7 +70,7 @@ def save(data):
 def cutout(target,radius):
     global i, m,n,x,y,index_format
     open_fits(target)
-    get_boundary(num_x,num_y)
+    get_boundary(x_size,y_size)
     index_format='{:010d}'.format(n)
     folder_name='cutout/'+str(index_format)
     if os.path.exists(folder_name)==False:
@@ -115,6 +115,7 @@ for (dirpath, dirnames, filenames) in walk(mypath):
         gc.collect()
     path_dict.clear()
 
+# build up our directory_map
 df1=pd.DataFrame(data=df1_list,columns=['parent directory','dir_id'])
 df1.to_pickle("./cutout/directory_map.pkl")
 print (df1)
