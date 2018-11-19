@@ -18,6 +18,7 @@ import gc
 from make_cutout_para import prep
 
 start_time=time.time()
+#assign specific values to all the variables
 i,s,m,n,mypath,ra,scale,df1_list,df2_list,name_list,path_dict = prep()
 
 #Open a FITS file, read its data, create its corresponding folder and get the size of x and y pix
