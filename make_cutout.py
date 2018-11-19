@@ -90,10 +90,7 @@ def cutout(target,radius):
 
 # Scan through the directory looking for FITS file
 for (dirpath, dirnames, filenames) in walk(mypath):
-    for (sdirpath, sdirnames, sfilenames) in walk(dirpath):
-        sfile_list=sfilenames
-        break
-    for sfile in sfile_list:
+    for sfile in filenames:
         if '.fits' in sfile:
             name_list.append(sfile)
             path_dict[sfile]=dirpath
