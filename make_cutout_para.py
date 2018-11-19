@@ -1,5 +1,5 @@
 def prep():
-    global i,s,m,n,mypath,ra,scale,df1_list,df2_list,name_list,file_list,sfile_list,path_dict
+    global i,s,m,n,mypath,ra,scale,df1_list,df2_list,name_list,path_dict
     i=0
     m=0
     n=0
@@ -10,7 +10,5 @@ def prep():
     df1_list=[]
     df2_list=[]
     name_list=[]
-    file_list=[]
-    sfile_list=[]
     path_dict=dict()
-    return i,s,m,n,mypath,ra,scale,df1_list,df2_list,name_list,file_list,sfile_list,path_dict
+    return i,s,m,n,mypath,ra,scale,df1_list,df2_list,name_list,path_dict
