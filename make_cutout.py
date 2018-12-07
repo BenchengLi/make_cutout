@@ -1,120 +1,204 @@
-from astropy.io import fits
-from astropy.wcs import WCS
-from astropy.nddata import Cutout2D
-import numpy as np
-from numpy import ma, ndarray
-import pandas as pd
-from scipy.misc import imsave
-from PIL import Image
-from scipy.misc import imshow, toimage, imsave, imread
+# IPython
 from IPython.core.interactiveshell import InteractiveShell
 InteractiveShell.ast_node_interactivity = "all"
+from IPython import display
+
+from scipy.misc import imshow, toimage, imsave, imread
+import pandas as pd
+import numpy as np
 import os
-from os import walk, path
 import shutil
-import pickle
 import time
 import gc
+import glob
+import matplotlib as plt
+from matplotlib import pyplot
+
+# AstroPy
+from astropy import units as u
+from astropy.io import fits
+from astropy.wcs import WCS
+from astropy.coordinates import SkyCoord, Angle
+from astropy.nddata import Cutout2D
+
+# My parameters
 from make_cutout_para import prep
 
-start_time=time.time()
-#assign specific values to all the variables
-i,s,m,n,mypath,ra,scale,df1_list,df2_list,name_list,path_dict = prep()
+start_time = time.time()
 
-#Open a FITS file, read its data, create its corresponding folder and get the size of x and y pix
-def open_fits(target):
-    global file_data, file_wcs, x_size, y_size
-    file=fits.open(target,ignore_missing_end=True)
-    file_data=file[0].data
-    file_wcs=WCS(file[0].header)
-    file_wcs.sip=None
-    x_size=int(np.ma.size(file_data,1))
-    y_size=int(np.ma.size(file_data,0))
-
-# generate a list for all x and y values
-def get_boundary(num1,num2):
-    global x_list, y_list
-    x_list=[]
-    y_list=[]
-    for n in range(int(num1/s)+1):
-        if num1-n>0.5*s:
-            x_list.append(int(n*s))
-    for n in range(int(num2/s)+1):
-        if num2-n>0.5*s:
-            y_list.append(int(n*s))
-
-#Prepare the data for cutout process
-def normal_data(data):
-    global data3,data_max,nan_count,data3_max
-    flat_data=np.ravel(data)
-    data_max=np.percentile(flat_data,int(scale))
-    data1=np.maximum(data,0)
-    data2=np.minimum(data1, data_max)
-    data3=data2/data_max*255
-    flat_data3=np.ravel(data3)
-    # Check if more than 30% of pix value is NaN (Directly count NaN in ndarray is not easy...)
-    data3_max=np.percentile(flat_data3,30)
-
-#save data array into jpeg images and build up our big_map
-def save(data):
-    im=Image.fromarray(data)
-    if im.mode != 'RGB':
-        im=im.convert('RGB')
-    image_name='{:010d}.jpeg'.format(i)
-    imsave(image_name,im)
-    ra, dec=file_wcs.all_pix2world(x,y,0)
-    cube2=[np.int32(i),np.float32(ra),np.float32(dec),np.int32(x),np.int32(y),np.float32(data_max),np.int32(n)]
-    df2_list.append(cube2)
-    shutil.move(image_name,'cutout/'+str(index_format))
-
-#cut FITS file
-def cutout(target,radius):
-    global i, m,n,x,y,index_format
-    open_fits(target)
-    get_boundary(x_size,y_size)
-    index_format='{:010d}'.format(n)
-    folder_name='cutout/'+str(index_format)
-    if os.path.exists(folder_name)==False:
-        os.mkdir(folder_name)
-    else:
-        print(folder_name+' already exists!')
-    # loop
-    for y in y_list:
-        for x in x_list:
-            cutout=Cutout2D(data=file_data, position=(x,y), size=int(radius), wcs=file_wcs,mode='partial')
-            data=cutout.data
-            normal_data(data)
-            if np.isnan(data3_max)==False:
-                save(data3)
-                i=i+1
+class FITS():
+    def __init__(self, fits_dir, band = None):
+        self.dir = fits_dir
+        self.band = band
+        self.file = fits.open(fits_dir)
+        self.data = self.file[0].data
+        self.wcs  = WCS(self.file[0].header)
+        self.dim  = self.data.shape
 
 
-# Scan through the directory looking for FITS file
-for (dirpath, dirnames, filenames) in walk(mypath):
-    for sfile in filenames:
-        if '.fits' in sfile:
-            name_list.append(sfile)
-            path_dict[sfile]=dirpath
-    num_fits=len(name_list)
-    for each_fits in path_dict:
-        print ('Working on '+each_fits+' '+str(m+1)+'/'+str(num_fits))
-        path=dirpath+'/'+each_fits
-        cube1=[path,np.int32(n)]
+    def cutout(self, pos = (50, 50), size = (64, 64), save_to_dir = None, scale_func = None):
+        # Crop
+        cutout = Cutout2D(
+            data=self.data,
+            position = pos, #SkyCoord(row['ra'], row['dec'], unit="deg", frame="fk5"),
+            size = size,
+            wcs = self.wcs)
+
+        if scale_func is None:
+            scale_func = lambda x:x
+
+        output, check_nan, p_high = scale_func(cutout.data)
+
+        if np.isnan(check_nan) == False:
+
+            check_nan = 0
+            # Determine file extension
+            ext = save_to_dir.split('.')[-1]
+
+            if ext == 'fits':
+                # Create a new fits object and add cutout data
+                new_file        = self.file # fits.PrimaryHDU()
+                new_file[0].data   = output
+
+                # Add coord info to the header
+                new_coords      = cutout.wcs
+                # Update new FITS coords
+                new_file[0].header.update(new_coords.to_header())
+
+                # Save the new fits file
+                new_file.writeto(save_to_dir)
+
+            elif ext in ('jpeg', 'jpg', 'png'):
+                imsave(save_to_dir, output)
+
+            else:
+                raise Exception('The file extension must be one of the following: fits, jpeg, jpg, png. "{}" was given instead.'.format(ext))
+        else:
+            check_nan = 1
+
+        return output, check_nan, p_high
+
+    def get_boundary(self, stride = 16,):
+        # get the boundary for x and y, return two lists
+        x_list=[]
+        y_list=[]
+
+        x_num = self.dim[1]
+        y_num = self.dim[0]
+
+        for n in range(int( x_num/stride ) + 1):
+            if x_num-n>0.5*stride:
+                x_list.append(int(n*stride))
+        for n in range(int( y_num/stride ) + 1):
+            if y_num-n>0.5*stride:
+                y_list.append(int(n*stride))
+
+        return x_list, y_list
+
+
+def percentile_normalization(data, percentile_low = 1.5, percentile_high = 1.5, p_low_feed = None, p_high_feed = None, scale_coef = 1):
+
+    p_low  = np.percentile(data, percentile_low)
+    p_high = np.percentile(data, 100 - percentile_high)
+
+    # Artificially set p_low and p_high
+    if p_low_feed:
+        p_low = p_low_feed
+
+    if p_high_feed:
+        p_high = p_high_feed
+
+    # Bound values between q_min and q_max
+    normalized = np.clip(data, p_low, p_high)
+    # Shift the zero to prevent negative vlaues
+    normalized = normalized - np.min(normalized)
+    # Normalize so the max is 1
+    normalized /= np.max(normalized)
+    # Scale
+    normalized *= scale_coef
+
+    '''
+    The line below is added by Ben in order to check if most of the data entries are NaN.
+    '''
+
+    check_nan = np.percentile(normalized, 70)
+
+    return normalized, check_nan, p_high
+
+
+def count(n):
+    # define a function to add accumulatively
+    n = n + 1
+    return n
+
+
+def main():
+    # main function
+    s,data_dir,save_dir = prep()
+    df1_list = []
+    df2_list = []
+    i = 0
+    n = 0
+
+    # get a list of all FITS files under the desired directory
+    name_list = glob.glob(data_dir+'/**/*.fits', recursive= True)
+    num_fits = len(name_list)
+    for each_fits in name_list:
+        print ('Working on '+each_fits+' '+str(n+1)+'/'+str(num_fits))
+
+        # build dataframe1
+        cube1=[each_fits,np.int32(n)]
         df1_list.append(cube1)
-        cutout(path,ra)
-        index_format='{:010d}'.format(n)
-        df2=pd.DataFrame(data=df2_list,columns=['file_id','RA','Dec','x_pix','y_pix','q_max','dir_id'])
-        df2.to_pickle('./cutout/'+str(index_format)+'/big_map.pkl')
-        print(df2)
-        print (each_fits+' done! '+str(m+1)+'/'+str(num_fits))
-        n=n+1
-        m=m+1
-        df2_list.clear()
-        gc.collect()
-    path_dict.clear()
 
-# build up our directory_map
-df1=pd.DataFrame(data=df1_list,columns=['parent directory','dir_id'])
-df1.to_pickle("./cutout/directory_map.pkl")
-print (df1)
-print("--- %s seconds ---" % (time.time() - start_time))
+        # input FITS
+        file = FITS(each_fits)
+        # get the x and y lists
+        x_list, y_list = file.get_boundary(stride = s)
+        # define scale_func
+        sf = lambda data: percentile_normalization(data, percentile_high=1., percentile_low=30)
+        # loop over x and y list
+        for y in y_list:
+            for x in x_list:
+                image_id = '{:010d}'.format(i)+'.jpeg'
+                fits_id = '{:010d}'.format(n)
+
+                # make seperate dirs for each FITS file
+                if os.path.isdir(save_dir+'/'+fits_id) == False:
+                    os.mkdir(save_dir+'/'+fits_id)
+
+                # save arrays as images
+                data, check_nan, p_high = file.cutout(pos=(x, y), save_to_dir=str(save_dir+'/'+fits_id+'/'+image_id) ,scale_func=sf)
+                # check if the data is full of NaN
+                if check_nan == 0:
+
+                    # get ra, dec according to wcs and build df2
+                    ra, dec=file.wcs.all_pix2world(x,y,0)
+                    cube2=[np.int32(i),np.float32(ra),np.float32(dec),np.int32(x),np.int32(y),np.float32(p_high),np.int32(n)]
+                    df2_list.append(cube2)
+                    # accumulatively add 1 to file_id
+                    i = count(i)
+
+        # save dataframe2
+        df2=pd.DataFrame(data=df2_list,columns=['file_id','RA','Dec','x_pix','y_pix','q_max','dir_id'])
+        df2.to_pickle(save_dir+'/'+fits_id+'/big_map.pkl')
+        print(df2)
+
+
+        # after each loop is done, clear df2
+        df2_list.clear()
+        print (each_fits+' done! '+str(n+1)+'/'+str(num_fits))
+        n = count(n)
+
+
+    # save dataframe1
+    df1=pd.DataFrame(data=df1_list,columns=['parent directory','dir_id'])
+    df1.to_pickle(save_dir+"/directory_map.pkl")
+    print (df1)
+    # print how much time used
+    print("--- %s seconds ---" % (time.time() - start_time))
+
+
+
+if __name__ == '__main__':
+
+    main()
